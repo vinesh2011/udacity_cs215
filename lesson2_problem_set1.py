@@ -12,89 +12,103 @@
 
 verbose = False
 
-def findPath(edges, visited, eulerian_path, node):
-    edges0 = set()
-    if verbose:
-        print('  ------ findPath  ------   ')
-        print("edges0", edges0)
-        print("visited0", visited)
-        print("eulerian_path0", eulerian_path)
-        print("node0", node)
-        print('  ------ ------  ------   ')
-    for i in edges:
-        if i in visited:
-            edges0.add(i)
-            if verbose:
-                print("edges0", edges0)
-        elif (node == None) or (node == i[0]) :
-            visited.add(i)
-            eulerian_path.append(i[0])
-            node = i[1]
-            if verbose:
-                print("visited0", visited)
-                print("eulerian_path0", eulerian_path)
-        elif node == i[1]:
-            visited.add(i)
-            eulerian_path.append(i[1])
-            node = i[0]
-            if verbose:
-                print("visited0", visited)
-                print("eulerian_path0", eulerian_path)
-        else:
-            edges0.add(i)
-            if verbose:
-                print("edges0", edges0)
-        if verbose:
-            print("node0", node)
-            print("---")
-    if len(edges0) != 0:
-        if len(edges0) == len(edges):
-            if verbose:
-                print('no solution seems possible from here')
-            return []
-        else:
-            return findPath(edges0, visited, eulerian_path, node)
-    return eulerian_path
-        #print(1)
-
-def addToDict(dict, x, y):
-    if not x in dict:
-        dict[x]=[]
-    dict[x].append(y)
+def addToDict(x, y,  connections):
+    if not x in connections:
+        connections[x]=[]
+    connections[x].insert(0, y)
     
 def analyze(graph):
-    dict = {}
     connections = {}
     for edge in graph:
-        addToDict(dict, edge[0], edge[1])
-        addToDict(dict, edge[1], edge[0])
-    for key in dict:
-        size = len(dict[key])
-        if not size in connections:
-            connections[size]=[]
-        connections[size].append(key)
-    #print('dict', dict)
+        addToDict(edge[0], edge[1], connections)
+        addToDict(edge[1], edge[0], connections)
     #print('connections', connections)
+    return connections
+
+def copy(c):
+    c1={}
+    for i in c:
+        c1[i] = c[i].copy()
+    return c1
+
+def remove(connections, keyNode, valueNode):
+    connections[keyNode].remove(valueNode)
+    if len(connections[keyNode]) ==0:
+        del connections[keyNode]
+
+def getGraph(graph, startNode, nextNode):
+    graph0 = graph.copy()
+    edge = (startNode, nextNode)
+    if not edge in graph:
+        edge = (nextNode, startNode)
+    if verbose:
+        print('getGraph graph', graph)
+        print('getGraph edge', edge)
+    graph0.remove(edge)
+    return graph0
+    
+def findPath1(graph, startNode):
+    if len(graph) == 0:
+        return []
+    connections1 = analyze(graph)
+    if not startNode in connections1:
+        return -1
+    eulerianPath = []
+    connections = copy(connections1)
+    for nextNode in connections1[startNode]:
+        remove(connections, startNode, nextNode)
+        remove(connections, nextNode, startNode)
+        eulerianPath.append(nextNode)
+        graph0 = getGraph(graph, startNode, nextNode)
+        out = findPath1(graph0, nextNode)
+        if verbose:
+            print('out', out)
+            print('graph0', graph0)
+            print('nextNode', nextNode)
+            print('eulerianPath', eulerianPath)
+        if out == -1:
+            addToDict(startNode, nextNode, connections)
+            addToDict(nextNode, startNode, connections)
+        else:
+            eulerianPath.extend(out)
+            return eulerianPath
 
 def find_eulerian_tour(graph):
     if len(graph) == 0:
         return []
-    analyze(graph)
-    #exit(3)
-    #print("grpah", graph)
-    visited = set()
-    eulerian_path = []
-    try:
-        eulerian_path = findPath(graph, visited, eulerian_path, None)
-        eulerian_path.append(graph[0][0])
-    except BaseException:
-        if verbose:
-            print('some  error')
-        #tb = sys.exc_info()[2]
-        #raise OtherException(...).with_traceback(tb)
+    if verbose:
+        print("graph", graph)
+    startNode = graph[0][0]
+    eulerianPath = [startNode]
+    eulerianPath1 = findPath1(graph, startNode)
+    eulerianPath.extend(eulerianPath1)
 
     #print("visited", visited)
-    #print("eulerian_path",  eulerian_path)
+    #print("eulerianPath",  eulerianPath)
     if verbose:
-        print(eulerian_path)
-    return eulerian_path
+        print(eulerianPath)
+    return eulerianPath
+
+graph=[(1,2),(2,3),(3,1)]
+out =  find_eulerian_tour(graph)
+print(out)
+
+graph = [(0, 1), (1, 5), (1, 7), (4, 5),
+(4, 8), (1, 6), (3, 7), (5, 9),
+(2, 4), (0, 4), (2, 5), (3, 6), (8, 9)]
+out =  find_eulerian_tour(graph)
+print(out)
+
+graph = [(1, 13), (1, 6), (6, 11), (3, 13),
+(8, 13), (0, 6), (8, 9),(5, 9), (2, 6), (6, 10), (7, 9),
+(1, 12), (4, 12), (5, 14), (0, 1),  (2, 3), (4, 11), (6, 9),
+(7, 14),  (10, 13)]
+out =  find_eulerian_tour(graph)
+print(out)
+
+graph = [(8, 16), (8, 18), (16, 17), (18, 19),
+(3, 17), (13, 17), (5, 13),(3, 4), (0, 18), (3, 14), (11, 14),
+(1, 8), (1, 9), (4, 12), (2, 19),(1, 10), (7, 9), (13, 15),
+(6, 12), (0, 1), (2, 11), (3, 18), (5, 6), (7, 15), (8, 13), (10, 17)]
+out =  find_eulerian_tour(graph)
+print(out)
