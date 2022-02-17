@@ -6,41 +6,25 @@
 def centrality_max(G, v):
     if len(G) == 0:
         return 0
-    if not v in G:
-        return 0
-    print('G', G)
-    print('------')
-    visited = set()
     open_list = [(v,-1)]
     distance={}
-    print(len(open_list), open_list[0])
     while len(open_list) !=0:
         currentNode, length0 = open_list[0]
-        print('currentNode, length ', currentNode, length0 )
         del open_list[0]
-        visited.add(currentNode)
-        distance[currentNode] = length0+1
+        distance[currentNode] = length0 + 1
         for node in G[currentNode]:
-            if not node in visited:
-                length = length0+2
-                visited.add(node)
-                distance[node] = length
-                for n in G[node]:
-                    if not n in visited:
-                        open_list.append((n, length))
-                print('currentNode  node length ==> ' , currentNode, node, (length))
-                print('visited_0', visited)
-                print('open_list_0', open_list)
-                print('distance_0', distance)
-                print('------')
-    print('length', (length), 'visited', visited)
-    print('distance', distance)
-    max =0
+            if node in distance:
+                continue
+            length = length0 + 2
+            distance[node] = length
+            for n in G[node]:
+                if n in distance:
+                    continue
+                open_list.append((n, length))
+    max = 0
     for i in distance:
         if distance[i] > max:
-            print("max", i, max, distance[i])
             max = distance[i]
-    print('------', max)
     return max
 
 #################
