@@ -1,3 +1,4 @@
+import time
 # Bridge Edges v4
 #
 # Find the bridge edges in a graph given the
@@ -70,7 +71,7 @@ def parseChild1(G, visitedNodes, map, treeNode):
             treeNode.children.append(otherTreeNode)
             G[treeNode.data][otherNode]  = "green"
             G[otherNode][treeNode.data] = "green"
-    #for otherTreeNode in treeNode.children:
+    for otherTreeNode in treeNode.children:
             parseChild1(G, visitedNodes, map, otherTreeNode)
 
 def create_rooted_spanning_tree(G, root):
@@ -107,25 +108,40 @@ def test_create_rooted_spanning_tree():
                  }
 
 ###########
-def parse_to_tree(G, node):
-    visited = set(node)
-    redEdges=[]
-    open_list=[node]
+def addChildren(dict, child1, child2):
+    if not child1 in dict:
+        dict[child1] = {}
+    dict[child1][child2] = 1
+    
+def parse_to_tree(G, root):
+    dataToNodeDict = {root.data: root}
+    redEdges = {}
+    open_list = [root]
     while len(open_list) !=0:
-        treeNode = open_list.pop(0)
-        for otherNodeData in G[treeNode.data]:
-            if otherNodeData in visited:
+        node = open_list.pop(0)
+        for otherNodeData in G[node.data]:
+            #if G[treeNode.data][otherNodeData] == "red":
+                #addChildren(redEdges, treeNode.data, otherNodeData)
+                #addChildren(redEdges, otherNodeData, treeNode.data)
+            if otherNodeData in dataToNodeDict:
                 continue
-            if G[treeNode.data][otherNodeData] == "green":
-                visited.add(otherNodeData)
+            if G[node.data][otherNodeData] == "green":
                 otherTreeNode = Tree(otherNodeData)
-                otherTreeNode.parent = treeNode
-                treeNode.children.append(otherTreeNode)
-            elif G[treeNode.data][otherNodeData] == "red":
-                redEdges.append((treeNode.data, otherNodeData))
-                redEdges.append((otherNodeData, treeNode.data))
-        for otherTreeNode in treeNode.children:
-            open_list.append(otherTreeNode)
+                otherTreeNode.parent = node
+                node.children.append(otherTreeNode)
+                dataToNodeDict[otherNodeData] = otherTreeNode
+        for n in node.children:
+            open_list.append(n)
+
+    open_list = [root]
+    while len(open_list) !=0:
+        node = open_list.pop(0)        
+        for n in node.children:
+            open_list.append(n)            
+        for otherNodeData in G[node.data]:
+            if G[node.data][otherNodeData] == "red":
+                addChildren(redEdges, node, dataToNodeDict[otherNodeData])
+                addChildren(redEdges, dataToNodeDict[otherNodeData], node)
     return redEdges
 
 def parse_to_tree0(G, visitedNodes, treeNode):
@@ -185,14 +201,14 @@ def all_children_ranked(parent, mapping):
     return True
 
 def post_order(S, root):
-    print(S)
+    #print(S)
     rootNode = Tree(root)
     parse_to_tree(S, rootNode)
-    print(str(rootNode))
+    #print(str(rootNode))
     mapping = post_order_rank(rootNode)
     # return mapping between nodes of S and the post-order value
     # of that node
-    print('mapping_', mapping)
+    #print('mapping_', mapping)
     return mapping
 
 # This is just one possible solution
@@ -236,12 +252,12 @@ def number_of_descendants_parse_tree(root):
     return mapping
 
 def number_of_descendants(S, root):
-    print(S)
+    #print(S)
     rootNode = Tree(root)
     parse_to_tree(S, rootNode)
-    print(str(rootNode))
+    #print(str(rootNode))
     mapping = number_of_descendants_parse_tree(rootNode)
-    print(mapping)
+    #print(mapping)
     return mapping
 
 def test_number_of_descendants():
@@ -255,31 +271,86 @@ def test_number_of_descendants():
           }
     nd = number_of_descendants(S, 'a')
     assert nd == {'a':7, 'b':1, 'c':5, 'd':4, 'e':3, 'f':1, 'g':1}
-test_number_of_descendants()
-###############
 
-def lowesr_post_order_rank(root, redEdges):
-    mapping={}
-    open_list=[root]
-    while len(open_list) !=0 :
-        
+###############
+def processIfMin(node, currentMin, newVar, redEdgesUsed, isRedEdge):
+    if newVar < currentMin:
+        currentMin = newVar
+        if isRedEdge:
+            redEdgesUsed[node] = 1
+        elif node in redEdgesUsed:
+            del redEdgesUsed[node]
+    return currentMin
+
+def processIfMax(node, currentMin, newVar, redEdgesUsed, isRedEdge):
+    if newVar > currentMin:
+        currentMin = newVar
+        if isRedEdge:
+            redEdgesUsed[node] = 1
+        elif node in redEdgesUsed:
+            del redEdgesUsed[node]
+    return currentMin
+
+def lowesr_post_order_rank(root, redEdges, po_mapping, aggFn):
+    mapping = {}
+    redEdgesUsed = {}
+    tempMapping = {}
+    open_list_hash={root:1}
+    open_list = [root]
+    while len(open_list) != 0:
+        allDescendantsMapped = True
+        node = open_list.pop(0)
+        del open_list_hash[node]
+        print(node, open_list_hash, mapping)
+        time.sleep(1)
+        if not node.data in tempMapping:
+            tempMapping[node.data] = po_mapping[node.data]
+        aggPo = tempMapping[node.data]
+        if node in redEdges and not node.data in redEdgesUsed:
+            for n in redEdges[node]:
+                if not n in mapping:
+                    if len(n.children)==0 and len(node.children) ==0:
+                        aggPo = aggFn(node, aggPo, po_mapping[n.data], redEdgesUsed, True)
+                        mapping[node.data] = aggPo
+                        mapping[n.data] = aggPo
+                    else:
+                        allDescendantsMapped = False
+                else:
+                    aggPo = aggFn(node, aggPo, mapping[node.data], redEdgesUsed, True)
+        for n in node.children:
+            if n.data in mapping:
+                aggPo = aggFn(node,  aggPo, mapping[n.data], redEdgesUsed, False)
+            else:
+                allDescendantsMapped = False
+                if not n in open_list_hash:
+                    open_list.append(n)
+                    open_list_hash[n]=1
+        if allDescendantsMapped:
+            mapping[node.data] = aggPo
+        else:
+            if not node in open_list_hash:
+                open_list.append(node)
+                open_list_hash[node]=1
+            tempMapping[node.data] = aggPo
+    return mapping
     
     
-def lowest_post_order(S, root, po):
-    print(S)
+def lowest_post_order(S, root, po_mapping):
+    #print('S', S)
     rootNode = Tree(root)
     redEdges = parse_to_tree(S, rootNode)
-    print(str(rootNode))
-    mapping = lowesr_post_order_rank(rootNode, redEdges)
+    #print(rootNode, str(rootNode))
+    #print('redEdges', redEdges)
+    #po_mapping = post_order_rank(rootNode)
+    mapping = lowesr_post_order_rank(rootNode, redEdges, po_mapping, processIfMin)
     # return mapping between nodes of S and the post-order value
     # of that node
-    print('mapping_', mapping)
-    return mapping
+    #print('mapping_', mapping)
     # return a mapping of the nodes in S
     # to the lowest post order value
     # below that node
     # (and you're allowed to follow 1 red edge)
-    pass
+    return mapping
 
 def test_lowest_post_order():
     S = {'a': {'c': 'green', 'b': 'green'}, 
@@ -297,12 +368,12 @@ def test_lowest_post_order():
 
 ################
 
-def highest_post_order(S, root, po):
-    # return a mapping of the nodes in S
-    # to the highest post order value
-    # below that node
-    # (and you're allowed to follow 1 red edge)
-    pass
+def highest_post_order(S, root, po_mapping):
+    rootNode = Tree(root)
+    redEdges = parse_to_tree(S, rootNode)
+    mapping = lowesr_post_order_rank(rootNode, redEdges, po_mapping, processIfMax)
+    print('mapping',mapping)
+    return mapping
 
 def test_highest_post_order():
     S = {'a': {'c': 'green', 'b': 'green'}, 
@@ -316,7 +387,6 @@ def test_highest_post_order():
     po = post_order(S, 'a')
     h = highest_post_order(S, 'a', po)
     assert h == {'a':7, 'b':5, 'c':6, 'd':5, 'e':4, 'f':3, 'g':3}
-    
 #################
 
 def bridge_edges(G, root):
@@ -338,3 +408,8 @@ def test_bridge_edges():
     assert bridges == [('d', 'e')]
 
 #test_create_rooted_spanning_tree()
+
+#test_lowest_post_order()
+#test_number_of_descendants()
+#test_create_rooted_spanning_tree()
+test_highest_post_order()
