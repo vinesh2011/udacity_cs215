@@ -3,6 +3,8 @@
 #
 import printTree
 
+import random
+
 def parent(i): 
     return (i-1)/2
 def left_child(i): 
@@ -50,75 +52,135 @@ def remove_min(L):
     down_heapify(L, 0)
     return L
 
-
 def insert_to_heap(L, e):
     L.append(e)
     n = len(L)
     fix_heap_for_insert(L, n-1)
 
 def fix_heap_for_insert(L,i):
-    print(i, L)
+    #print(i, L)
     if i == 0: return
     pi = int(parent(i))
     if L[i] < L[pi]:
         (L[i], L[pi]) = (L[pi], L[i])
         fix_heap_for_insert(L, pi)
 
-def get_top_k(k, L):
-    L =list(reversed(range(10)))
-    build_heap(L)
-    lk= L[0:k]
-    build_heap(lk)
-
-#########
-# Testing Code
-#
-
-# build_heap
 def build_heap(L):
     #for i in range(len(L)):
     for i in range(len(L)-1, -1, -1):
         down_heapify(L, i)
-        print(i,L)
+        #print(i,L)
 
-def test_print_tree3(L, i=0, level=0):
-    print ('    ' * level + str(L[i]))
-    level +=1
-    l  = left_child(i)
-    if l <len(L):
-        test_print_tree3(L, l, level)
-    r  = right_child(i)
-    if r <len(L):
-        test_print_tree3(L, r, level)
+def get_top_k(L, k):
+    print("before")
+    printTree.BstNode.print_tree(L)
+    #build_heap(L)
+    print("after_heapify")
+    printTree.BstNode.print_tree(L)
+    Lk= L[0:k]
+    build_heap(Lk)
+    print("===  after   heapify  ===")
+    printTree.BstNode.print_tree(Lk)            
+    for i in L:
+        if i < Lk[0]:
+            continue
+        elif i > Lk[0]:
+            if exists(Lk, i):
+                continue
+            Lk[0] = i
+            down_heapify(Lk, 0)
+            print("after", i)
+            printTree.BstNode.print_tree(Lk)     
+    return Lk       
+
+def exists(L, k, idx=0):
+    #print(L, k, idx)
+    if len(L) <= idx:
+        return False
+    if k < L[idx]:
+        return False
+    elif k  == L[idx]:
+        return True
+    else:
+        left_child_idx = left_child(idx)
+        if  exists(L, k, left_child_idx):
+            return True
+        right_child_idx = right_child(idx)
+        if exists(L, k, right_child_idx):
+            return True
+    return False
+#########
+# Testing Code
+#########
 
 def test_insert_min():
     L = list(reversed(range(10)))
-    print("range", L)
+    print("before", L)
+    printTree.BstNode.print_tree(L)
     build_heap(L)
-    print("heap", L)
+    #print("heap", L)
     insert_to_heap(L, -1)
-    print("after_remove_min", L)
+    #print("after_remove_min", L)
     # now, the new minimum should be 1
-    assert L[0] == 1
+    print("after")
+    printTree.BstNode.print_tree(L)
+    assert L[0] == -1
 
 def test_remove_min():
     L = list(reversed(range(10)))
-    print("range", L)
-    down_heapify(L,0)
-    print("heap", L)
-    L2  = remove_min(L)
-    print("after_remove_min", L2)
+    print("before", L)
+    printTree.BstNode.print_tree(L)
+    build_heap(L)
+    #print("heap", L)
+    remove_min(L)
+    #print("after_remove_min", L2)
     # now, the new minimum should be 1
+    print("after")
+    printTree.BstNode.print_tree(L)
     assert L[0] == 1
 
 def test_insert_to_heap():
     L = list(range(30))
+    print("before", L)
+    printTree.BstNode.print_tree(L)
     build_heap(L)
     insert_to_heap(L, -1)
-    print(L)    
+    #print(L)    
+    print("after")
     printTree.BstNode.print_tree(L)
 
-test_remove_min()
+def test_get_top_k():
+    L=[]
+    for _ in range(20):
+        i =random.randint(0, 100)
+        if not i in L:
+            L.append(i)
+    #L=list(reversed(range(10)))
+    print(L)
+    k=6
+    Lk=get_top_k(L, k)
+    build_heap(L)
+    for _ in range(len(L)-k):
+        remove_min(L)
+    assert Lk[0]==L[0]
+    print("L", L)
+    print("Lk", Lk)
+    Lk_copy = Lk.copy()
+    build_heap(Lk)
+    assert Lk_copy == Lk
 
-test_insert_to_heap()
+def test_exists():
+    L = list(reversed(range(10)))
+    print("before", L)
+    printTree.BstNode.print_tree(L)
+    build_heap(L)
+    assert True == exists(L, 6)
 
+def  test():
+    test_exists()
+    test_get_top_k()
+    test_remove_min()
+    test_insert_to_heap()
+    test_insert_min()
+
+#test()

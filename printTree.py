@@ -86,11 +86,12 @@ class BstNode:
 
     @staticmethod
     def print_tree(L):
-        print(L)
+        #print(L)
         b = BstNode(L[0])
         for i in L[1:]:
             b.blindInsert(i)
         b.display()
 
-L=[0, 2, 3, 1, 5, 6, 7, 8, 9, 4]
-BstNode.print_tree(L)
+def test():
+    L=[0, 2, 3, 1, 5, 6, 7, 8, 9, 4]
+    BstNode.print_tree(L)
